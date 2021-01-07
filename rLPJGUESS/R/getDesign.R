@@ -8,10 +8,10 @@
 #' @author Ramiro Silveyra Gonzalez, Maurizio Bagnara
 #' @example /inst/examples/getDesignHelp.R
 getDesign <- function(scale, list =  F){
-  if ( is.null(scale) || scale != "global" & scale != "europe"){
-    stop("Please provide a valid scale: global or europe")
-  }
-  tmp <- design.default[[scale]]
+  # if ( is.null(scale) || scale != "global" & scale != "europe"){
+  #   stop("Please provide a valid scale: global or europe")
+  # }
+  tmp <- design.default$scale
   if (list){
     tmp.names <- rownames(tmp)
     tmp <- as.vector(tmp, mode = "list")

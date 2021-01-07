@@ -27,24 +27,24 @@ runLPJWrapper <- function(runObject){
     stop("Please provide a valid output directory")
   }
   if (is.null(runObject[["template1"]])){
-    stop("Please provide a valid  template1 name")
+    stop("Please provide a valid template1 name")
   }
   if (is.null(runObject[["template2"]])){
-    stop("Please provide a valid  template2 name")
+    stop("Please provide a valid template2 name")
   }
   #if (is.null(runObject[["parameterList"]])){ No because it could run with default values
   #  stop("Please provide a valid parameter list.")
   #}
-  if (is.null(runObject[["plot.data"]])){
+  if(is.null(runObject[["plot.data"]])){
     warning("The plot.data boolean has not been provided. It will be set to FALSE")
     runObject$plot.data <- FALSE
     runObject$save.plots <- FALSE
   }
-  if ( is.null(runObject[["save.plots"]])){
+  if(is.null(runObject[["save.plots"]])){
     warning("The save.plots boolean has not been provided. It will be set to FALSE")
     runObject$save.plots <- FALSE
   }
-  if (is.null(runObject[["typeList"]])){
+  if(is.null(runObject[["typeList"]])){
     runObject$typeList <- typelist.default
     warning("The output type list has not been provided")
     warning("Setting type list to default values")
@@ -60,24 +60,28 @@ runLPJWrapper <- function(runObject){
   previouswd <- getwd()
   setwd(runObject$runDir)
   # write out files
-  runObject$template1Mem <- sub("path_to_output/",
-                                paste(runObject$outDir, "/", sep =""), runObject$template1Mem)
-  for ( j in 1:length(runObject$typeList)) {
-    runObject$template1Mem <- sub(paste("! file", runObject$typeList[j], sep="_"),
-                                  paste("file",  runObject$typeList[j], sep="_") , runObject$template1Mem)
+  runObject$template1Mem <- sub("run_outputdirectory",
+                                paste("\"",runObject$outDir, "/","\"", sep =""), runObject$template1Mem)
+
+  ## we have to do an exact search, this here has the problem of
+  ## cmass and cmass_st would both be activated
+  for (j in 1:length(runObject$typeList)) {
+    runObject$template1Mem <- sub(paste("!file", paste0(runObject$typeList[j]," ") ,sep="_"),
+                                  paste("file",  paste0(runObject$typeList[j], " "),sep="_") , runObject$template1Mem)
   }
 
   writeLines(runObject$template1Mem,file.path(runObject$runDir,runObject$template1))
 
   #runObject$template2Mem <- readLines(file.path(runObject$mainDir,runObject$template2))
   runObject$template2Mem <- gsub("path_to_globalTemplate",
-                                paste(runObject$runDir, "/", runObject$template1, sep=""),
-                                runObject$template2Mem )
-  runObject$template2Mem  <- gsub("_file_gridlist_",
-                                 paste(runObject$runDir,"/", runObject$gridList, sep=""),
+    paste(runObject$runDir, "/", runObject$template1, sep=""),
+     runObject$template2Mem)
+  runObject$template2Mem  <- sub("_file_gridlist_",
+                                 paste(runObject$runDir,"/", runObject$gridList,sep=""),
                                  runObject$template2Mem )
-  for ( j in 1:length(runObject$filesNames)){
-    if (is.na(runObject$filesNames[[j]][2])){
+
+  for (j in 1:length(runObject$filesNames)){
+    if(is.na(runObject$filesNames[[j]][2])){
       runObject$template2Mem  <- gsub(paste("\\<",runObject$filesNames[[j]][1], "\\>", sep=""),
                                       "",runObject$template2Mem)
     }else{
@@ -86,17 +90,17 @@ runLPJWrapper <- function(runObject){
                                       runObject$template2Mem)
     }
   }
-  for ( j in 1:length(runObject$variablesNames)){
-    if (!is.na(runObject$variablesNames[[j]][2])){
-      runObject$template2Mem[grep(paste("\\<",runObject$variablesNames[[j]][1], "\\>", sep=""),
-                                  runObject$template2Mem, value=F)]  <- gsub("! param", "param",
-                                      grep(paste("\\<",runObject$variablesNames[[j]][1], "\\>", sep=""),
-                                           runObject$template2Mem, value=T))
-      runObject$template2Mem  <- gsub(paste("\\<",runObject$variablesNames[[j]][1], "\\>", sep=""),
-                                      runObject$variablesNames[[j]][2],
-                                      runObject$template2Mem)
-    }
-  }
+  # for ( j in 1:length(runObject$variablesNames)){
+  #   if (!is.na(runObject$variablesNames[[j]][2])){
+  #     runObject$template2Mem[grep(paste("\\<",runObject$variablesNames[[j]][1], "\\>", sep=""),
+  #                                 runObject$template2Mem, value=F)]  <- gsub("! param", "param",
+  #                                     grep(paste("\\<",runObject$variablesNames[[j]][1], "\\>", sep=""),
+  #                                          runObject$template2Mem, value=T))
+  #     runObject$template2Mem  <- gsub(paste("\\<",runObject$variablesNames[[j]][1], "\\>", sep=""),
+  #                                     runObject$variablesNames[[j]][2],
+  #                                     runObject$template2Mem)
+  #   }
+  # }
 
   writeLines(runObject$template2Mem,file.path(runObject$runDir,runObject$template2))
   writeLines(runObject$gridListCell, file.path(runObject$runDir, runObject$gridList))
@@ -145,7 +149,7 @@ runLPJWrapper <- function(runObject){
              outDir = runObject$outDir, save.plots = runObject$save.plots,
              prefix = paste("run",runObject$runID, "_", sep=""))
   }
-  message(paste("Finished run ", runObject$runID, sep = ""))
+   message(paste("Finished run ", runObject$runID, sep = ""))
   #----------------------------------------------------------------------------#
   # END
   #----------------------------------------------------------------------------#

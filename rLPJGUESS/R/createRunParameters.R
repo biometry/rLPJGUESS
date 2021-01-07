@@ -12,7 +12,8 @@
 createRunParameters <- function(x, singleRun, parameterList){
 
   # Check the parameters: length, type and names
-  parameterList <- try(checkParameters.matrix(singleRun$scale, parameterList), FALSE)
+  #parameterList <- try(checkParameters.matrix(singleRun$scale, parameterList), FALSE)
+  parameterList <- checkParameters.matrix(singleRun$scale, parameterList)
   if ('try-error' %in% class(parameterList)){ stop("Invalid parameterList provided")  }
 
   if (class(parameterList[[1]])== "list"){
@@ -32,18 +33,20 @@ createRunParameters <- function(x, singleRun, parameterList){
 
   # Based on parameter Names write the general template
   # and if no parameter is present raise and error?
-  parameterCommon <- checkParameters.names(scale= singleRun$scale, parameterNames)
 
+  #parameterCommon <- checkParameters.names(scale = singleRun$scale, parameterNames)
+  #print(parameterList)
+  # parameterCommon <- parameterList[[1]]
+  #
+  # if(length(parameterCommon) > 0){
+  #   #parameterCommon <- checkParameters.rootDist(parameterCommon)
+  #   #write common template
+  #   parameterCommonNames <- names(parameterCommon)
+  #   for(i in 1:length(parameterCommon)){
+  #     singleRun$template1Mem <- sub(paste0(" ",parameterCommonNames[i]," "), paste0(" ",parameterCommon[[i]]," "), singleRun$template1Mem)
+  #   }
+  # }
 
-  if(length(parameterCommon) > 0){
-    parameterCommon <- checkParameters.rootDist(parameterCommon)
-    # write common template
-    parameterCommonNames <- names(parameterCommon)
-    for(i in 1:length(parameterCommon))  {
-      singleRun$template1Mem <- sub(parameterCommonNames[i], parameterCommon[[i]], singleRun$template1Mem)
-    }
-
-  }
 
   # Check the grids
   gridListCell <- readLines(file.path(singleRun$mainDir,singleRun$gridList))

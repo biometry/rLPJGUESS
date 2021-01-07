@@ -105,7 +105,7 @@
 #'  \linkS4class{LPJSetup}, \code{\link{getParameterList}}, \code{\link{getDesign}}
 #' @export
 #' @keywords rLPJGUESS
-#' @author Ramiro Silveyra Gonzalez, Maurizio Bagnara, Florian Hartig
+#' @author Ramiro Silveyra Gonzalez, Maurizio Bagnara, Florian Hartig, Johannes Oberpriller
 #' @example /inst/examples/runLPJHelp.R
 runLPJ <-  function(x, settings, typeList=NULL, parameterList=NULL){
 
@@ -150,7 +150,7 @@ runLPJ <-  function(x, settings, typeList=NULL, parameterList=NULL){
     #singleRun$template1Mem <- readLines(file.path(singleRun$mainDir, singleRun$template1))
     # template 2: the cru or cf template
     #singleRun$template2Mem <- readLines(file.path(singleRun$mainDir,singleRun$template2))
-    result <- try(runLPJWrapper(singleRun), FALSE)
+    result <- runLPJWrapper(singleRun)
     if ('try-error' %in% class(result)){
       stop("Error when running the model")
     }
@@ -192,19 +192,18 @@ runLPJ <-  function(x, settings, typeList=NULL, parameterList=NULL){
   #----------------------------------------------------------------------------#
   message("\n\nReading the parallel object structure")
   # do the settings check
-  runParameters <- try(createRunParameters(x, singleRun, parameterList), FALSE)
+  #runParameters <- try(createRunParameters(x, singleRun, parameterList), FALSE)
+  runParameters <- createRunParameters(x, singleRun, parameterList)
   if ('try-error' %in% class(runParameters)){
     stop("Invalid settings provided")
   }
   # SOCK CLUSTER
   #----------------------------------------------------------------------------#
-  # Initialisation of snowfall.
-  #message("\n");message("\n");str(runParameters[[1]])
   # Create cluster
   if (x@clusterType =="SOCK"){
     message( paste ("Creating a", x@clusterType, "cluster with",
                 x@numCores, " cores", sep = " " ))
-    cl <-  snow::makeSOCKcluster(x@numCores)
+    cl <-  snow::makeSOCKcluster(x@numCores,useXDR = F)
     # Exporting needed data and loading required
     # packages on workers. --> If daa is loaded firs it can be exporte to all workers
     snow::clusterEvalQ(cl, library(rLPJGUESS))
@@ -213,15 +212,12 @@ runLPJ <-  function(x, settings, typeList=NULL, parameterList=NULL){
     message ("Sending tasks to the cores")
     # Try catch prevent the package for crashing
     # the implemented try catch in snow is not satisfactory
-    #result <- try(snow::clusterMap(cl, runLPJWrapper,  runParameters ), FALSE)
-    #if ('try-error' %in% class(result)){
-    #  stop("Error when running the model")
-    #}
-    result <- snow::clusterMap(cl, runLPJWrapper,  runParameters )
-    #result <- snow::clusterApply(cl, runParameters, runLPJWrapper )resul
+    result <- try(snow::clusterMap(cl, runLPJWrapper,  runParameters), FALSE)
+    if ('try-error' %in% class(result)){
+      stop("Error when running the model")
+    }
     # Destroy cluster
     snow::stopCluster(cl)
-    # deliver data to clusters
     # Snow's close command, shuts down and quits from script
 
   # MPI CLUSTER

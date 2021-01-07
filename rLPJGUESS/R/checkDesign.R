@@ -1,7 +1,7 @@
 
 # @title A check design function
 # @description  This function checks the provided design against the
-# default values, and returns a complete design. If wrong desing is passed,
+# default values, and returns a complete design. If wrong design is passed,
 # the fucntion will raise an error.
 # @param scale a character string indicating whether the model runs global or for europe.
 # @param design a named list or matrix holding the design

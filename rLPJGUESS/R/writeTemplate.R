@@ -27,37 +27,38 @@
 #' @note Based an older code of Istem Fer, Uni Potsdam
 #' @example /inst/examples/writeTemplateHelp.R
 writeTemplate <- function(template1, parameterList, runDir, check = "serial"){
-
   # Checking provided parameters
-  if (is.null(runDir) || !file.exists(runDir) ){
-    stop("Please provide a valid run directory")
-  }
-  if (is.null(template1) || !file.exists(file.path(runDir, template1))){
-    stop("The provided template does not exits. Please provide a template name")
-  }
+  # if (is.null(runDir) || !file.exists(runDir) ){
+  #   stop("Please provide a valid run directory")
+  # }
+  # if (is.null(template1) || !file.exists(file.path(runDir, template1))){
+  #   stop("The provided template does not exits. Please provide a template name")
+  # }
   if (is.null(parameterList) || !class(parameterList) =="list"){
     stop("Please provide a parameterList")
   }
-  # call the function
-  if (grepl("global",template1)){
-      # Checking paramaterList and if null, setting to default values
-      # 256 physiological parameters can be calibrated right now. Exceptions are the fine roots distributions for all PFTs
-      parameterList <- checkParameters(scale= "global", parameterList, type = check )
-  }else if (grepl("europe", template1)){
-      # Checking paramaterList and if null, setting to default values
-      # 585 physiological parameters, both general and species-specific, can be calibrated right now.
-      # Exceptions are the fine roots distributions for all species and PFTs
-      parameterList <- checkParameters(scale = "europe", parameterList,  type = check)
-  }else{
-    stop("Cannot recognize the template: neither global nor europe")
-  }
-  parameterList <- checkParameters.rootDist(parameterList)
-  # getting parameters names
+#   # call the function
+#   if (grepl("global",template1)){
+#       # Checking paramaterList and if null, setting to default values
+#       # 256 physiological parameters can be calibrated right now. Exceptions are the fine roots distributions for all PFTs
+#       parameterList <- checkParameters(scale= "global", parameterList, type = check )
+#   }else if (grepl("europe", template1)){
+#       # Checking paramaterList and if null, setting to default values
+#       # 585 physiological parameters, both general and species-specific, can be calibrated right now.
+#       # Exceptions are the fine roots distributions for all species and PFTs
+#       parameterList <- checkParameters(scale = "europe", parameterList,  type = check)
+#   }else{
+#     stop("Cannot recognize the template: neither global nor europe")
+#   }
+#   parameterList <- checkParameters.rootDist(parameterList)
+#   # getting parameters names
   parameterNames <- names(parameterList)
+  #message(parameterNames)
   # looping over parameters ## Faster
+  #print(str(parameterList))
   template <- readLines(file.path(runDir, template1))
-  for(i in 1:length(parameterNames))  {
-    template <- sub( parameterNames[i], parameterList[[i]], template)
+  for(i in 1:length(parameterNames)){
+    template <- gsub(paste0(" ",parameterNames[i]," "), paste0(" ",parameterList[[i]]," "), template)
   }
   writeLines(template, file.path(runDir, template1))
 }
