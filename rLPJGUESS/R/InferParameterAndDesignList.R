@@ -3,20 +3,21 @@
 #' @description This function returns a list of parameters and design parameters
 #'  used for the later model runs. It also allows the user to see a summary
 #'  of all his parameters
-#' @param MainInputFile a list with one element named "main" which is the main
-#' instruction file given to lpj-guess when running it in the command line
-#' @param NameMainFile a character string with the name of the main file. In
+#' @param MainInputFile a list with one element named "main" which contains the name of the main
+#' instruction file given to lpj-guess when running it on the command line
+#' @param NameMainFile a character string with the name of the new main file. Into
 #' this file this function will write all input parameters. When no value is
-#' provided the default main instruction file while be main.ins
-#' @param NamePftFile a character string with the name of the pft file. In this
+#' provided the default main instruction file name while be main.ins
+#' @param NamePftFile a character string with the name of the pft file. Into this
 #' file the function will write all parameters specific for pfts and design.
-#' When no value is provided the default main instruction file while be pft.ins
+#' When no file is provided the default main instruction file name will be pft.ins
 #' @param vectorvaluedparams a vector of character strings providing the vector
-#' valued parameters. rlpjguess can in the moment not handel vectorvalued
-#' parameters, which can not be computed from the first element. Typically
-#' for this is the rootdist, which depends on the different layers in the soil.
-#' @return a list with a matrix for the defaultparameter values and a matrix
-#' with defaultdesign values
+#' valued parameters. rlpjguess can in the moment not handle vectorvalued
+#' parameters. An example for this type of parameters is the "rootdist"-parameters,
+#' which has for each soil layer an individual parameter.
+#' @return a list a containing matrix with the default parameter values (called defaultparameters)
+#' read from the instruction file and a matrix
+#' with default design values (called defaultdesign) read from the instruction file
 #' @author Johannes Oberpriller
 #' @export
 
@@ -72,6 +73,11 @@ InferParameterAndDesignList <- function(MainInputFile,NameMainFile = "main.ins",
       for(j in 1:(endofgroup-1)){
         parametersnew = vector(length = 4)
         parametersnew[1] = "pft"
+        if(nchar(trimws(runlist_pfts[i+j])) != 0){
+          while(nchar(trimws(substring(runlist_pfts[i+j],1,1)))==0){
+            runlist_pfts[i+j] = substring(runlist_pfts[i+j],2,nchar(runlist_pfts[i+j]))
+          }
+        }
         parametersnew[2] = gsub("[[:space:]]","",strsplit(runlist_pfts[i+j]," ")[[1]][1])
         parametersnew[3] = paste0(gsub("\"","",linename),"_", parametersnew[2])
         parameterposition = 2
@@ -87,7 +93,9 @@ InferParameterAndDesignList <- function(MainInputFile,NameMainFile = "main.ins",
         }
         parametersnew[4] = gsub("^!","",parametersnew[4])
         parametersnew[5] = gsub("\"","",linename)
-        defaultparameters = rbind(defaultparameters, parametersnew)
+        if(substring(runlist_pfts[i+j],1,1) != "!"){
+          defaultparameters = rbind(defaultparameters, parametersnew)
+        }
       }
     }
   }
@@ -157,7 +165,7 @@ InferParameterAndDesignList <- function(MainInputFile,NameMainFile = "main.ins",
 
 # @description This function takes the main input input files and desired file
 # names and returns a list with files, variables, parameters and design parameters
-# @param MainInputFile is the main input file see InferParameterAndDesignList
+# @param MainInputFile is a list with the first element being the name of the main input file see InferParameterAndDesignList
 # @param NameMainFile is the main file after reordering see InferParameterAndDesignList
 # @param NamePftFile is the pft file after reordering see InferParameterAndDesignList
 # @return returns a list with the entries parameters,files, variables and design
@@ -170,26 +178,39 @@ write_main_templates <- function(MainInputFile,NameMainFile, NamePftFile){
 
   insfilelist = infer_instruction_order(MainInputFile = MainInputFile)
 
-  # Create the temporary files to get all lines
+  # If the main input file imports information from other input files, create
+  # one large temporary .ins file
 
-  file.create("./main_tryout.ins")
-  outcon <- file("./main_tryout.ins", "w")
-  for(i in 1:length(insfilelist)){
-    lines <- readLines(insfilelist[[i]])
-    writeLines(lines,outcon)
+  if(length(insfilelist) > 1){
+
+    # Create the temporary files to get all lines
+
+    file.create("./main_tryout.ins")
+    outcon <- file("./main_tryout.ins", "w")
+    for(i in 1:length(insfilelist)){
+      lines <- readLines(insfilelist[[i]])
+      writeLines(lines,outcon)
+    }
+    close(outcon)
+
+    # Create the Main and Ins file
+
+    file.create(paste0("./",NameMainFile))
+    file.create(paste0("./",NamePftFile))
+    lines <- readLines("./main_tryout.ins")
+
+    # delete all import files
+
+    importlines = grepl("import",substr(lines, start = 1, stop = 7)) # AHES I would increase stop, you never know whether the 'import' statement is somehwere further down. As we have learned today, the .ins files can be quite different.
+    lines = lines[-which(importlines)]
+
+  }else{
+
+    # Else, if there is only one .ins file, read in all its lines.
+
+    lines <- readLines(MainInputFile[['main']])
+
   }
-  close(outcon)
-
-  # Create the Main and Ins file
-
-  file.create(paste0("./",NameMainFile))
-  file.create(paste0("./",NamePftFile))
-  lines <- readLines("./main_tryout.ins")
-
-  # delete all import files
-
-  importlines = grepl("import",substr(lines, start = 1, stop = 7))
-  lines = lines[-which(importlines)]
 
   # Grep all "param" lines and the ndep_timeseries, delete duplicates
   # and write them to the parameterfiles
@@ -200,21 +221,24 @@ write_main_templates <- function(MainInputFile,NameMainFile, NamePftFile){
   parameternames = sapply(strsplit(parameters," "), function (x) x[2])
   duplicates_parameters = which(duplicated(parameternames) ==T)
 
+
   while(length(duplicates_parameters) != 0 ){
-    first_apperance = c()
+    first_appearance = c()
     for(i in duplicates_parameters){
-      first_apperance <- c(first_apperance, which(parameternames == parameternames[i])[1])
+      first_appearance <- c(first_appearance, which(parameternames == parameternames[i])[1])
     }
-    parameters = parameters[-first_apperance]
+    parameters = parameters[-first_appearance]
     parameternames = sapply(strsplit(parameters," "), function (x) x[2])
     duplicates_parameters = which(duplicated(parameternames) ==T)
   }
 
-  ndep_time = grepl("!ndep_timeseries", substr(lines, start = 1, stop = 16))
+
+  ndep_time = grepl("!ndep_timeseries", substr(lines, start = 1, stop = 15))
   if(length(which(ndep_time ==T)) ==0){
     ndep_time = grepl("ndep_timeseries", substr(lines, start =1, stop =15))
   }
   parameters = c(parameters, lines[which(ndep_time)])
+
   parameternames = sapply(strsplit(parameters," "), function (x) x[2])
   parameterfiles = grepl("file", parameternames)
   parametervariables = parameters[-which(parameterfiles)]
@@ -275,11 +299,17 @@ write_main_templates <- function(MainInputFile,NameMainFile, NamePftFile){
   designnames = sapply(strsplit(lines," "), function (x) x[1])
   duplicates_design = which(duplicated(designnames) ==T)
 
-  first_apperance = c()
-  for(i in duplicates_design){
-    first_apperance <- c(first_apperance, which(designnames == designnames[i])[1])
+
+  if(length(duplicates_design) != 0){
+    first_apperance = c()
+    for(i in duplicates_design){
+      first_apperance <- c(first_apperance, which(designnames == designnames[i])[1])
+    }
+    design = lines[-first_apperance]
+  }else{
+    design = lines
   }
-  design = lines[-first_apperance]
+
 
   # write the PFT or Species file which includes the title, the files,
   # the designvariables and all pft/speciesspecific lines into the
@@ -289,9 +319,11 @@ write_main_templates <- function(MainInputFile,NameMainFile, NamePftFile){
   writeLines(c(titel,headingfileline,files,"\n",design, "\n",pftlines),Pftcon)
   close(Pftcon)
 
+  # If there were multiple .insfiles, which first had to be merged, a temporary merged file
+  # had been created. Delete this file now.
   # remove the main file written in the beginning because no more need
 
-  file.remove("./main_tryout.ins")
+  if(length(insfilelist) > 1) file.remove("./main_tryout.ins")
 
   return(list(files = parameterfiles, variables = parametervariables,
               pfts = pftlines, design = design ))
@@ -301,7 +333,7 @@ write_main_templates <- function(MainInputFile,NameMainFile, NamePftFile){
 # @description This function infers the correct order of the instruction files
 # and returns it
 # @param MainInputFile is the main input file see InferParameterAndDesignList
-# @return returns a vector with the names of correct ordered instruction files
+# @return returns a vector with the names of correctly ordered instruction files
 # @author Johannes Oberpriller
 
 infer_instruction_order <- function(MainInputFile){
@@ -317,7 +349,7 @@ infer_instruction_order <- function(MainInputFile){
 
   # get all imports from the file
 
-  imports = get_imports(MainInputFile[["main"]],maindirectory = maindirectory)
+  imports = get_imports(MainInputFile[["main"]], maindirectory = maindirectory)
 
   # order the imports like they are in the main instruction file
 
@@ -397,3 +429,4 @@ get_imports <- function(file,maindirectory){
   }
   return(imports)
 }
+

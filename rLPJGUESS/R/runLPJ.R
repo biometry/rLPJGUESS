@@ -6,8 +6,8 @@
 #'  character string indicating the path to the directory where
 #'  the model link and template are located, and in which the function will create
 #'  the directory structure for the outputs.
-#' @param parameterList either a named list containing the parameters to be calibrated
-#' or a matrix. If running in parallel, parameter list should be either a list of of list or
+#' @param parameterList a named list containing the parameters (when not run in parallel) to be calibrated
+#' or a matrix (when run in parallel). If running in parallel, parameter list should be either a list of of list or
 #' a matrix where each row is a parameter combination and the column names should be named
 #' after the parameters. See  fucntion \code{\link{getParameterList}}) for default values.
 #' @param typeList a character vector with the outputs to be analyzed.

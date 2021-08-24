@@ -2,13 +2,12 @@
 #' @description This function takes the defaultparameters and a defaultlist of
 #' of files and writes the main and pft instruction file into the defined destinations
 #' which are MainTemplateDestination and PftTemplateDestination
-#' @param defaultparameters a matrix with the defaultparameters which should be
-#' used in rlpjguess runs
+#' @param defaultobjects R object produced by \code{\link{InferParameterAndDesignList}}. Its first list contains the data frame with default parameters extracted from the instruction files
 #' @param defaultlist a matrix with the design parameters which should be used
 #' in rlpjguess runs
-#' @param MainTemplateDestination a character string indicating the space where
+#' @param MainTemplateDestination a character string indicating the location to which
 #' one should write the main file
-#' @param PftTemplateDestination a character string indicating the space where
+#' @param PftTemplateDestination a character string indicating the location to which
 #' one should write the pft file
 #' @param NameMainFile a character string with the name of the main file
 #' which was produced with the default parameters before
@@ -19,11 +18,13 @@
 #' @export
 
 
-AdjustTemplates <- function(defaultparameters,defaultlist,
+AdjustTemplates <- function(defaultobjects,
                             MainTemplateDestination = NULL,
                             PftTemplateDestination = NULL,
                             NameMainFile = NULL,
                             NamePftFile = NULL){
+
+
 
   # check if there is a destination to save the main template
 
@@ -45,9 +46,13 @@ AdjustTemplates <- function(defaultparameters,defaultlist,
     stop("Please provide a valid pft template")
   }
 
-  ## TO-DO: Dokumentation
-  ## TO-DO: Maybe give another return than the function does now
 
+  ## define the thinks used here
+
+  defaultparameters = defaultobjects$defaultparameters
+  defaultlist = defaultobjects$defaultlist
+
+  ## read in text and adjust the templates
 
 
   tx  <- readLines(NamePftFile)
