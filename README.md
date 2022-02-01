@@ -54,3 +54,50 @@ In Rstudio, the vignette may not be built per default. You will turn this on in 
 ```{r}
 devtools::build_vignettes("rLPJGUESS")
 ```
+### Workflow when using the package: 
+
+#### 1. Define a folder to run the simulations, e.g. 
+```{r}
+mainDir    <- file.path(getwd(), "LPJrunTest")
+```
+and place the binary (exectuable) of LPJ-GUESS into this folder (the binary does not come with this package).
+
+#### 2. Provide a valid instruction file that you usually use to define the set-up of LPJ-GUESS to the InferParameterAndDesignList function. 
+```{r}
+defaultparameters <- InferParameterAndDesignList(list(main = paste0(mainDir,"LPJ_instruction_file.ins")), 
+                                                 NameMainFile = "main.ins", NamePftFile = "pft.ins",
+                                                 vectorvaluedparams = c("rootdist","eps_mon",
+                                                                        "storfrac_mon","photo",
+                                                                        "fertdates","fertrate"))
+```
+
+This function extracts the parameters, design and driver-files used to run LPJ-GUESS and splits the instruction into a main file containing inputs and a PFT file, which has all the settings. Because we cannot handle vectorvalued parameters at the moment, they have to be provided to this function as well. 
+
+#### 3. Call the adjust template function, which rewrites the templates to new destinations (IMPORTANT: the files need to be in the same directory as the binary, here: LPJrunTest)
+```{r}
+AdjustTemplates(defaultparameters = defaultparameters$defaultparameters,
+                defaultlist = defaultparameters$defaultlist,
+                MainTemplateDestination = "./LPJrunTest/main_new.ins",
+                PftTemplateDestination = "./LPJrunTest/pft_new.ins",
+                NameMainFile = "main.ins", NamePftFile = "pft.ins")
+```
+
+#### 4. Generate a set of parameters for the species (GetRunAbleParameters), we want to simulate, here Fagus sylvatica (Fag_syl):
+```{r}
+parameters <- GetRunAbleParameters(defaultparameters = defaultparameters, PFTs = c("Fag_syl"))
+```
+#### 5. Change some of these parameters and provide it as matrix with a set of parameters per row and parameter names as colnames (here: new parameter matrix is called parameters_new)
+
+#### 6. Define the settings and input files, we want to use as input for the simulations in a list (the required files depend on the LPJ-Version, here: the list is called LPJsettings)
+
+#### 7. Define the setup (i.e. sequential, parallel, which kind of parallelisation, here a SOCK cluster with numCores cores)
+```{r}
+LPJsetup <- setupLPJParallel(numCores = numCores, clusterType = "SOCK",
+                             mainDir = mainDir)
+```
+
+#### 8. Run the simulations with the model
+```{r}
+results <- runLPJ(x = LPJsetup, parameterList = parameters_new,
+                      typeList = typeList, settings = LPJsettings)
+```
