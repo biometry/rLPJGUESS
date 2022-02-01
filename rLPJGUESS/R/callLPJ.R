@@ -28,9 +28,9 @@ callLPJ <- function(mainDir, runDir , template2, mode){
   if (is.null(template2) ||  !file.exists(file.path(runDir, template2))){
     stop ("Please provide a valid template name")
   }
-  if (is.null(mode) || mode != "cf" & mode != "cru"){
-    stop("Please provide a valid cluster type: cf or cru")
-  }
+  # if (is.null(mode) || mode != "cf" & mode != "cru"){
+  #   stop("Please provide a valid cluster type: cf or cru")
+  # }
 
   #----------------------------------------------------------------------------#
   # CALL MODELL

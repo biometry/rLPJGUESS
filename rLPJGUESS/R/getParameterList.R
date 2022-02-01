@@ -11,11 +11,12 @@
 #' @author Ramiro Silveyra Gonzalez, Maurizio Bagnara
 #' @example /inst/examples/getParameterListHelp.R
 getParameterList <- function(scale, list =  TRUE){
-  if ( is.null(scale) || scale != "global" & scale != "europe"){
+  if (is.null(scale)){
     stop("Please provide a valid scale: global or europe")
   }
-  tmp <- parameterList.default[[scale]]
+  #tmp <- parameterList.default[1]$normal
 
+  tmp <- parameterList.default
 
   if (list){
     tmp.names <- rownames(tmp)

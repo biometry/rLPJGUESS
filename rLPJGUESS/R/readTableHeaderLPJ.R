@@ -14,7 +14,7 @@ readTableHeaderLPJ <- function(x){
   columnNames <- unlist(strsplit(splitted_clean, " "))
   df <- read.table(x, header =F, skip = 1)
 
-  if (ncol(df) != length(columnNames)){
+  if(ncol(df) != length(columnNames)){
     stop("Model output is not readable")
   }else{
     names(df) <- columnNames

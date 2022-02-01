@@ -6,7 +6,7 @@
 #  Default value is all outputs.
 # @param settings additional parameters
 # @seealso  \code{\link{runLPJ}}
-# @author Ramiro Silveyra Gonzalez, Maurizio Bagnara, Florian Hartig
+# @author Ramiro Silveyra Gonzalez, Maurizio Bagnara, Florian Hartig, Johannes Oberpriller
 # @return TODO
 createSingleObject <- function(mainDir, typeList, settings){
 
@@ -14,24 +14,18 @@ createSingleObject <- function(mainDir, typeList, settings){
                         file.co2 = NULL, file.cru = NULL, file.cru.misc = NULL,
                         file.ndep= NULL, file.temp = NULL, file.prec = NULL,
                         file.insol = NULL, file.wetdays = NULL, file.minTemp = NULL,
-                        file.maxTemp = NULL, variable.temp = NULL,
+                        file.soildata = NULL,
+                        file.maxTemp = NULL, variable.temp = NULL, variable.ndep = NULL,
                         variable.prec = NULL, variable.insol = NULL, variable.wetdays = NULL,
                         variable.minTemp = NULL, variable.maxTemp = NULL, template1 = NULL,
                         template2=NULL, plot.data = FALSE, save.plots = FALSE, processing = FALSE,
                         delete = TRUE, save= TRUE, runID = "", parallel = "auto",
-                        checkParameters = "serial", design = NULL)
+                        checkParameters = "serial", design = NULL, defaultlist = NULL)
   #, fun = NULL) # This would be to allow havin own functions in parallel.
 
   settings <- c(settings[names(settings) %in% names(defaultSettings)],
                 defaultSettings[ !names(defaultSettings) %in% names(settings)])
 
-  # mode
-  if (is.null(settings[["mode"]]) || settings[["mode"]] != "cf" & settings[["mode"]] != "cru"){
-    stop("Please provide a valid cluster type: cf or cru")
-  }
-  if ( is.null(settings[["scale"]]) || settings[["scale"]] != "global" & settings[["scale"]] != "europe"){ # this is relevant if getting template
-    stop("Please provide a valid scale: global or europe")
-  }
   if (is.null(typeList) || !class(typeList) == "character"){
     settings$typeList <-  typelist.default
     message("Output typeList has not been provided")
@@ -87,50 +81,54 @@ createSingleObject <- function(mainDir, typeList, settings){
   # to replace in the template
   # Go throught the files and check whether they provided, if so add them to
   # default list, otherwise stop the function
+
+  # Johannes: Depending on the version of LPJ different parameters are
+  # required to run the model.
+  # I think, every LPJ user has working instruction files,
+  # which allow to infer all required files and it is enough to provide
+  # the functionality to substitute them in the main file if they want to change
+  # this from the wrapper
+
   files <- settings[grepl("file", names(settings))]
-  files.default <-   files.parameters[[settings[["mode"]]]]
-  files.names <- names(files.default)
+  variables <- settings[grepl("variable", names(settings))]
+  filesandvariables = c(files,variables)
+
+  files.names <- names(settings$defaultlist)
+
   for (i in 1:length(files.names)){
-    if (is.null(files[[files.names[i]]])){
-      warning(paste("The", files.names[i], "has not been provided", sep = " "))
-    }else if(!file.exists(files[[files.names[i]]])){
+    if (is.null(filesandvariables[[files.names[i]]])){
+      next
+    }else if(!file.exists(filesandvariables[[files.names[i]]])){
       warning(paste("The", files.names[i], "does not exist", sep = " "))
     }else{
-      files.default[[files.names[i]]][2] <- files[[files.names[i]]]
-    }
-  }
-  #files.default <- files.default[keep]
+      #print(i)
+      #print(filesandvariables[[files.names[i]]])
+      settings$defaultlist[[files.names[i]]][2] <- filesandvariables[[files.names[i]]]
 
-  variables <- settings[grepl("variable", names(settings))]
-  variables.default <-   variables.parameters[[settings[["mode"]]]]
-  variables.names <- names(variables.default)
-  for (i in 1:length(variables.names)){
-    if (is.null(variables[[variables.names[i]]])){
-      warning(paste("The", variables.names[i], "has not been provided", sep = " "))
-    }else{
-      variables.default[[variables.names[i]]][2] <- variables[[variables.names[i]]]
     }
   }
-  #variables.default <- variables.default[keep]
+
 
   singleObject <- settings[!grepl("file", names(settings))]
   singleObject <- singleObject[!grepl("variable", names(singleObject))]
-  singleObject$filesNames <- files.default
-  singleObject$variablesNames <- variables.default
+  singleObject$filesNames <- settings$defaultlist
   singleObject$mainDir <- mainDir
   singleObject$runInfoDir <-  file.path(singleObject$mainDir,
                                         paste("runInfo",
                                               format(Sys.time(), "%Y_%m_%d_%H%M%S"),
                                               sep = "_"))
-  # Read template one and replace desing
+  # Read template one and replace design
   singleObject$template1Mem <- readLines(file.path(singleObject$mainDir, singleObject$template1))
 
   # Check the design
-  settings$design <- checkDesign(settings$scale , settings$design)
+  #settings$design <- checkDesign(settings$scale , settings$design)
 
   designNames <- names(settings$design)
-  for(i in 1:length(settings$design))  {
-    singleObject$template1Mem <- sub(designNames[i], settings$design[[i]], singleObject$template1Mem)
+
+  for(i in 1:length(settings$design)){
+    singleObject$template1Mem <- gsub(paste0(" ",designNames[[i]]," "),
+                                      paste0(" ",settings$design[[i]]," "),
+                                       singleObject$template1Mem)
   }
   if(settings$design[["run_ifcalcsla"]]==as.character(0)){
     singleObject$template1Mem <- sub("!sla", "sla", singleObject$template1Mem)

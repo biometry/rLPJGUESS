@@ -17,9 +17,9 @@
 # }
 checkParameters <- function(scale, parameterList = NULL, type = "serial"){
   # include check
-  if ( scale != "global" & scale != "europe"){
-    stop("Invalid scale: neither global nor europe")
-  }
+  # if ( scale != "global" & scale != "europe"){
+  #   stop("Invalid scale: neither global nor europe")
+  # }
   if (type != "parallel" & type != "serial" ){
     stop("Invalid check type")
   }
@@ -36,6 +36,7 @@ checkParameters <- function(scale, parameterList = NULL, type = "serial"){
       stop("Please provide a valid parameterList")
   }
   #  Throw an error if wrong parameter names
+
   dummyCheck <- !names(parameterList) %in% names(default)
   if(any(dummyCheck)){
     warning(paste("Wrong parameterList in ", paste(names(parameterList)[dummyCheck], collapse = ", " )))
@@ -64,15 +65,16 @@ checkParameters <- function(scale, parameterList = NULL, type = "serial"){
 
 checkParameters.names <- function(scale, parameterNames){
   # include check
-  if ( scale != "global" & scale != "europe"){
-    stop("Invalid scale: neither global nor europe")
-  }
+  # if ( scale != "global" & scale != "europe"){
+  #   stop("Invalid scale: neither global nor europe")
+  # }
   # call the default template
+
   default <- getParameterList(scale, list = T)
 
-  if(is.null(parameterNames)){
-    parameterList  <- default
-  }
+  # if(is.null(parameterNames)){
+  #   parameterList  <- default
+  # }
   #  Throw an error if wrong parameter names
   dummyCheck <- !parameterNames %in% names(default)
   if(any(dummyCheck)){
